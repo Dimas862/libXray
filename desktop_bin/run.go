@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/xtls/libxray/dns"
-	"github.com/xtls/libxray/xray"
+	"github.com/dimas862/libxray/dns"
+	"github.com/dimas862/libxray/xray"
 )
 
 type runXrayConfig struct {

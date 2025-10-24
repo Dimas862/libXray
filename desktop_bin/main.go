@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	"github.com/xtls/libxray/xray"
+	"github.com/dimas862/libxray/xray"
 )
 
 func main() {

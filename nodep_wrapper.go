@@ -3,8 +3,8 @@ package libXray
 import (
 	"encoding/base64"
 
-	"github.com/xtls/libxray/nodep"
-	"github.com/xtls/libxray/share"
+	"github.com/dimas862/libxray/nodep"
+	"github.com/dimas862/libxray/share"
 	"github.com/dimas862/xray-core/infra/conf"
 )
 
