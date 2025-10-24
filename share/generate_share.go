@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/xtls/xray-core/infra/conf"
+	"github.com/dimas862/xray-core/infra/conf"
 )
 
 // Convert XrayJson to share links.

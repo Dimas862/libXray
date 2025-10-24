@@ -5,9 +5,9 @@ import (
 	"runtime/debug"
 
 	"github.com/xtls/libxray/memory"
-	"github.com/xtls/xray-core/common/cmdarg"
-	"github.com/xtls/xray-core/core"
-	_ "github.com/xtls/xray-core/main/distro/all"
+	"github.com/dimas862/xray-core/common/cmdarg"
+	"github.com/dimas862/xray-core/core"
+	_ "github.com/dimas862/xray-core/main/distro/all"
 )
 
 // Constants for environment variables

@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/xtls/libxray/nodep"
-	"github.com/xtls/xray-core/app/router"
+	"github.com/dimas862/xray-core/app/router"
 	"google.golang.org/protobuf/proto"
 )
 

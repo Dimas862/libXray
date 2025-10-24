@@ -5,7 +5,7 @@ import (
 
 	"github.com/xtls/libxray/nodep"
 	"github.com/xtls/libxray/share"
-	"github.com/xtls/xray-core/infra/conf"
+	"github.com/dimas862/xray-core/infra/conf"
 )
 
 type getFreePortsResponse struct {

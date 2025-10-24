@@ -5,7 +5,7 @@ package controller
 import (
 	"syscall"
 
-	xinternet "github.com/xtls/xray-core/transport/internet"
+	xinternet "github.com/dimas862/xray-core/transport/internet"
 )
 
 // Give a callback before connection beginning. Useful for Android development.

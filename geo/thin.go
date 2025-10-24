@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/xtls/libxray/nodep"
-	"github.com/xtls/xray-core/app/router"
-	"github.com/xtls/xray-core/infra/conf"
+	"github.com/dimas862/xray-core/app/router"
+	"github.com/dimas862/xray-core/infra/conf"
 	"google.golang.org/protobuf/proto"
 )
 
