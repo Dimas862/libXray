@@ -1,4 +1,4 @@
-module github.com/xtls/libxray
+module github.com/dimas862/libxray
 
 go 1.25.1
 
