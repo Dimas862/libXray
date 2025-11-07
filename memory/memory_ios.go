@@ -26,6 +26,6 @@ func forceFree(interval time.Duration) {
 func InitForceFree() {
 	debug.SetGCPercent(10)
 	debug.SetMemoryLimit(maxMemory)
-	duration := time.Duration(interval) * time.Second
+	//duration := time.Duration(interval) * time.Second
 	//forceFree(duration)
 }
