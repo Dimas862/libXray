@@ -11,7 +11,7 @@ import (
 const (
 	interval = 1
 	// 30M
-	maxMemory = 30 * 1024 * 1024
+	maxMemory = 15 * 1024 * 1024
 )
 
 func forceFree(interval time.Duration) {
