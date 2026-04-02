@@ -68,11 +68,6 @@ func shareLink(proxy conf.OutboundDetourConfig) (*url.URL, error) {
 		if err != nil {
 			return nil, err
 		}
-	case "hysteria":
-		err := hysteriaLink(proxy, shareUrl)
-		if err != nil {
-			return nil, err
-		}
 	}
 	streamSettingsQuery(proxy, shareUrl)
 
@@ -89,11 +84,13 @@ func shadowsocksLink(proxy conf.OutboundDetourConfig, link *url.URL) error {
 	link.Fragment = getOutboundName(proxy)
 	link.Scheme = "ss"
 
-	link.Host = fmt.Sprintf("%s:%d", settings.Address, settings.Port)
-	password := fmt.Sprintf("%s:%s", settings.Cipher, settings.Password)
-	username := base64.StdEncoding.EncodeToString([]byte(password))
-	link.User = url.User(username)
-
+	if len(settings.Servers) > 0 {
+		server := settings.Servers[0]
+		link.Host = fmt.Sprintf("%s:%d", server.Address, server.Port)
+		password := fmt.Sprintf("%s:%s", server.Cipher, server.Password)
+		username := base64.StdEncoding.EncodeToString([]byte(password))
+		link.User = url.User(username)
+	}
 	return nil
 }
 
@@ -107,12 +104,20 @@ func vmessLink(proxy conf.OutboundDetourConfig, link *url.URL) error {
 	link.Fragment = getOutboundName(proxy)
 	link.Scheme = "vmess"
 
-	link.Host = fmt.Sprintf("%s:%d", settings.Address, settings.Port)
-	link.User = url.User(settings.ID)
-	if len(settings.Security) > 0 {
-		link.RawQuery = addQuery(link.RawQuery, "encryption", settings.Security)
+	if len(settings.Receivers) > 0 {
+		vnext := settings.Receivers[0]
+		link.Host = fmt.Sprintf("%s:%d", vnext.Address, vnext.Port)
+		if len(vnext.Users) > 0 {
+			user := vnext.Users[0]
+			var account *conf.VMessAccount
+			err := json.Unmarshal(user, &account)
+			if err != nil {
+				return err
+			}
+			link.User = url.User(account.ID)
+			link.RawQuery = addQuery(link.RawQuery, "encryption", account.Security)
+		}
 	}
-
 	return nil
 }
 
@@ -148,11 +153,24 @@ func socksLink(proxy conf.OutboundDetourConfig, link *url.URL) error {
 	link.Fragment = getOutboundName(proxy)
 	link.Scheme = "socks"
 
-	link.Host = fmt.Sprintf("%s:%d", settings.Address, settings.Port)
-	password := fmt.Sprintf("%s:%s", settings.Username, settings.Password)
-	username := base64.StdEncoding.EncodeToString([]byte(password))
-	link.User = url.User(username)
-
+	if len(settings.Servers) > 0 {
+		server := settings.Servers[0]
+		link.Host = fmt.Sprintf("%s:%d", server.Address, server.Port)
+		if len(server.Users) == 0 {
+			username := base64.StdEncoding.EncodeToString([]byte(":"))
+			link.User = url.User(username)
+		} else {
+			user := server.Users[0]
+			var account *conf.SocksAccount
+			err := json.Unmarshal(user, &account)
+			if err != nil {
+				return err
+			}
+			password := fmt.Sprintf("%s:%s", account.Username, account.Password)
+			username := base64.StdEncoding.EncodeToString([]byte(password))
+			link.User = url.User(username)
+		}
+	}
 	return nil
 }
 
@@ -166,28 +184,11 @@ func trojanLink(proxy conf.OutboundDetourConfig, link *url.URL) error {
 	link.Fragment = getOutboundName(proxy)
 	link.Scheme = "trojan"
 
-	link.Host = fmt.Sprintf("%s:%d", settings.Address, settings.Port)
-	link.User = url.User(settings.Password)
-
-	return nil
-}
-
-func hysteriaLink(proxy conf.OutboundDetourConfig, link *url.URL) error {
-	var settings *conf.HysteriaClientConfig
-	err := json.Unmarshal(*proxy.Settings, &settings)
-	if err != nil {
-		return err
+	if len(settings.Servers) > 0 {
+		server := settings.Servers[0]
+		link.Host = fmt.Sprintf("%s:%d", server.Address, server.Port)
+		link.User = url.User(server.Password)
 	}
-
-	link.Fragment = getOutboundName(proxy)
-	link.Scheme = "hysteria2"
-
-	link.Host = fmt.Sprintf("%s:%d", settings.Address, settings.Port)
-
-	if proxy.StreamSetting.HysteriaSettings != nil {
-		link.User = url.User(proxy.StreamSetting.HysteriaSettings.Auth)
-	}
-
 	return nil
 }
 
@@ -202,32 +203,6 @@ func streamSettingsQuery(proxy conf.OutboundDetourConfig, link *url.URL) {
 	if streamSettings.Network != nil {
 		network = string(*streamSettings.Network)
 	}
-
-	if network == "hysteria" {
-		if streamSettings.TLSSettings != nil {
-			if len(streamSettings.TLSSettings.ServerName) > 0 {
-				query = addQuery(query, "sni", streamSettings.TLSSettings.ServerName)
-			}
-			if streamSettings.TLSSettings.Insecure {
-				query = addQuery(query, "insecure", "1")
-			}
-		}
-
-		if len(streamSettings.Udpmasks) > 0 {
-			mask := streamSettings.Udpmasks[0]
-			if mask.Settings != nil {
-				var obfs *conf.Salamander
-				err := json.Unmarshal(*mask.Settings, &obfs)
-				if err == nil {
-					query = addQuery(query, "obfs", "salamander")
-					query = addQuery(query, "obfs-password", obfs.Password)
-				}
-			}
-		}
-		link.RawQuery = query
-		return
-	}
-
 	query = addQuery(query, "type", network)
 
 	if len(streamSettings.Security) == 0 {
@@ -380,13 +355,13 @@ func streamSettingsQuery(proxy conf.OutboundDetourConfig, link *url.URL) {
 		if alpn != nil && len(*alpn) > 0 {
 			query = addQuery(query, "alpn", strings.Join(*alpn, ","))
 		}
-		ech := streamSettings.TLSSettings.ECHConfigList
-		if len(ech) > 0 {
-			query = addQuery(query, "ech", ech)
-		}
-		pcs := streamSettings.TLSSettings.PinnedPeerCertSha256
-		if len(pcs) > 0 {
-			query = addQuery(query, "pcs", pcs)
+		// https://github.com/XTLS/Xray-core/discussions/716
+		// 4.4.3 allowInsecure
+		// 没有这个字段。不安全的节点，不适合分享。
+		// I don't like this field, but too many people ask for it.
+		allowInsecure := streamSettings.TLSSettings.Insecure
+		if allowInsecure {
+			query = addQuery(query, "allowInsecure", "1")
 		}
 	case "reality":
 		if streamSettings.REALITYSettings == nil {
@@ -429,4 +404,3 @@ func addQuery(query string, key string, value string) string {
 		return fmt.Sprintf("%s&%s", query, newQuery)
 	}
 }
-

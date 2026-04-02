@@ -32,4 +32,3 @@ func RegisterListenerController(controller DialerController) {
 		controller.ProtectFd(int(fd))
 	})
 }
-

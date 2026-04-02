@@ -152,5 +152,3 @@ func sortCodes(codes []*geoCountryCode) {
 		return codes[i].Code < codes[j].Code
 	})
 }
-
-

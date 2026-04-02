@@ -23,4 +23,3 @@ func RegisterListenerController(controller func(fd uintptr)) {
 		return conn.Control(controller)
 	})
 }
-

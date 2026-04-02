@@ -51,4 +51,3 @@ func ResetDns() string {
 	dns.ResetDns()
 	return response.EncodeToBase64("", nil)
 }
-
