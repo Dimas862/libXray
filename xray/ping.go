@@ -1,7 +1,7 @@
 package xray
 
 import (
-	"github.com/xtls/libxray/nodep"
+	"github.com/dimas862/libxray/nodep"
 )
 
 // Ping Xray config and find the delay and country code of its outbound.
@@ -29,3 +29,4 @@ func Ping(datDir string, configPath string, timeout int, url string, proxy strin
 
 	return delay, nil
 }
+

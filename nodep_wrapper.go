@@ -3,8 +3,8 @@ package libXray
 import (
 	"encoding/base64"
 
-	"github.com/xtls/libxray/nodep"
-	"github.com/xtls/libxray/share"
+	"github.com/dimas862/libxray/nodep"
+	"github.com/dimas862/libxray/share"
 	"github.com/dimas862/xray-core/infra/conf"
 )
 
@@ -48,4 +48,5 @@ func ConvertXrayJsonToShareLinks(base64Text string) string {
 	links, err := share.ConvertXrayJsonToShareLinks(xray)
 	return response.EncodeToBase64(links, err)
 }
+
 

@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/xtls/libxray/geo"
-	"github.com/xtls/libxray/nodep"
-	"github.com/xtls/libxray/xray"
+	"github.com/dimas862/libxray/geo"
+	"github.com/dimas862/libxray/nodep"
+	"github.com/dimas862/libxray/xray"
 )
 
 type CountGeoDataRequest struct {
@@ -200,3 +200,4 @@ func XrayVersion() string {
 	var response nodep.CallResponse[string]
 	return response.EncodeToBase64(xray.XrayVersion(), nil)
 }
+

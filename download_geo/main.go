@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	libXray "github.com/xtls/libxray"
-	"github.com/xtls/libxray/nodep"
+	libXray "github.com/dimas862/libxray"
+	"github.com/dimas862/libxray/nodep"
 )
 
 func ensureDir(dir string) error {
@@ -124,3 +124,4 @@ func main() {
 
 	fmt.Println("Geo data setup completed successfully.")
 }
+
