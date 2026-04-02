@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/xtls/xray-core/infra/conf"
+	"github.com/dimas862/xray-core/infra/conf"
 )
 
 // https://github.com/MetaCubeX/mihomo/blob/Alpha/docs/config.yaml
@@ -494,3 +494,4 @@ func (proxy ClashProxy) parseSecurity(streamSettings *conf.StreamConfig, outboun
 		streamSettings.REALITYSettings = realitySettings
 	}
 }
+

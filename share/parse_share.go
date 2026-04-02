@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xtls/xray-core/infra/conf"
+	"github.com/dimas862/xray-core/infra/conf"
 )
 
-// https://github.com/XTLS/Xray-core/discussions/716
+// https://github.com/dimas862/xray-core/discussions/716
 // Convert share text to XrayJson
 // support v2rayN plain text, v2rayN base64 text
 func ConvertShareLinksToXrayJson(links string) (*conf.Config, error) {
@@ -637,3 +637,4 @@ func (proxy xrayShareLink) parseSecurity(link *url.URL, streamSettings *conf.Str
 	}
 	return nil
 }
+

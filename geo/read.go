@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xtls/xray-core/infra/conf"
+	"github.com/dimas862/xray-core/infra/conf"
 )
 
 // Read all geo files in config file.
@@ -132,3 +132,4 @@ func appendMap(m map[string][]string, key string, value string) {
 	}
 	m[key] = v
 }
+

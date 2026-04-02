@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netlink v1.3.1
-	github.com/xtls/xray-core v1.260123.0
+	github.com/dimas862/xray-core v1.90.2
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -53,3 +53,4 @@ require (
 	gvisor.dev/gvisor v0.0.0-20260109181451-4be7c433dae2 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
+
