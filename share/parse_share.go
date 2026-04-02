@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dimas862/xray-core/infra/conf"
+	"github.com/xtls/xray-core/infra/conf"
 )
 
 // https://github.com/XTLS/Xray-core/discussions/716
@@ -32,7 +32,7 @@ func ConvertShareLinksToXrayJson(links string) (*conf.Config, error) {
 	}
 
 	text = FixWindowsReturn(text)
-	if strings.HasPrefix(text, "vless://") || strings.HasPrefix(text, "vmess://") || strings.HasPrefix(text, "socks://") || strings.HasPrefix(text, "ss://") || strings.HasPrefix(text, "trojan://") {
+	if checkSupportedShareLink(text) {
 		xray, err := parsePlainShareText(text)
 		if err != nil {
 			return xray, err
@@ -45,6 +45,16 @@ func ConvertShareLinksToXrayJson(links string) (*conf.Config, error) {
 		}
 		return xray, nil
 	}
+}
+
+func checkSupportedShareLink(text string) bool {
+	supportedSchemes := []string{"vless://", "vmess://", "socks://", "ss://", "trojan://", "hysteria2://", "hy2://"}
+	for _, scheme := range supportedSchemes {
+		if strings.HasPrefix(text, scheme) {
+			return true
+		}
+	}
+	return false
 }
 
 func FixWindowsReturn(text string) string {
@@ -70,6 +80,8 @@ func parsePlainShareText(text string) (*conf.Config, error) {
 			} else {
 				fmt.Println(err)
 			}
+		} else {
+			fmt.Println(err)
 		}
 	}
 	if len(outbounds) == 0 {
@@ -151,6 +163,12 @@ func (proxy xrayShareLink) outbound() (*conf.OutboundDetourConfig, error) {
 			return nil, err
 		}
 		return outbound, nil
+	case "hysteria2", "hy2":
+		outbound, err := proxy.hysteriaOutbound()
+		if err != nil {
+			return nil, err
+		}
+		return outbound, nil
 	}
 	return nil, fmt.Errorf("unsupport link: %s", proxy.rawText)
 }
@@ -160,13 +178,14 @@ func (proxy xrayShareLink) shadowsocksOutbound() (*conf.OutboundDetourConfig, er
 	outbound.Protocol = "shadowsocks"
 	setOutboundName(outbound, proxy.link.Fragment)
 
-	server := &conf.ShadowsocksServerTarget{}
-	server.Address = parseAddress(proxy.link.Hostname())
+	settings := &conf.ShadowsocksClientConfig{}
+
+	settings.Address = parseAddress(proxy.link.Hostname())
 	port, err := strconv.Atoi(proxy.link.Port())
 	if err != nil {
 		return nil, err
 	}
-	server.Port = uint16(port)
+	settings.Port = uint16(port)
 
 	user := proxy.link.User.String()
 	passwordText, err := decodeBase64Text(user)
@@ -177,11 +196,8 @@ func (proxy xrayShareLink) shadowsocksOutbound() (*conf.OutboundDetourConfig, er
 	if len(pwConfig) != 2 {
 		return nil, fmt.Errorf("unsupport link shadowsocks password: %s", passwordText)
 	}
-	server.Cipher = pwConfig[0]
-	server.Password = pwConfig[1]
-
-	var settings conf.ShadowsocksClientConfig
-	settings.Servers = []*conf.ShadowsocksServerTarget{server}
+	settings.Cipher = pwConfig[0]
+	settings.Password = pwConfig[1]
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -212,33 +228,24 @@ func (proxy xrayShareLink) vmessOutbound() (*conf.OutboundDetourConfig, error) {
 
 	query := proxy.link.Query()
 
-	user := &conf.VMessAccount{}
-	id, err := url.QueryUnescape(proxy.link.User.String())
-	if err != nil {
-		return nil, err
-	}
-	user.ID = id
-	security := query.Get("encryption")
-	if len(security) > 0 {
-		user.Security = security
-	}
+	settings := conf.VMessOutboundConfig{}
 
-	vnext := &conf.VMessOutboundTarget{}
-	vnext.Address = parseAddress(proxy.link.Hostname())
+	settings.Address = parseAddress(proxy.link.Hostname())
 	port, err := strconv.Atoi(proxy.link.Port())
 	if err != nil {
 		return nil, err
 	}
-	vnext.Port = uint16(port)
+	settings.Port = uint16(port)
 
-	userRawMessage, err := convertJsonToRawMessage(user)
+	id, err := url.QueryUnescape(proxy.link.User.String())
 	if err != nil {
 		return nil, err
 	}
-	vnext.Users = []json.RawMessage{userRawMessage}
-
-	settings := conf.VMessOutboundConfig{}
-	settings.Receivers = []*conf.VMessOutboundTarget{vnext}
+	settings.ID = id
+	security := query.Get("encryption")
+	if len(security) > 0 {
+		settings.Security = security
+	}
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -269,6 +276,7 @@ func (proxy xrayShareLink) vlessOutbound() (*conf.OutboundDetourConfig, error) {
 		return nil, err
 	}
 	settings.Port = uint16(port)
+
 	id, err := url.QueryUnescape(proxy.link.User.String())
 	if err != nil {
 		return nil, err
@@ -278,7 +286,6 @@ func (proxy xrayShareLink) vlessOutbound() (*conf.OutboundDetourConfig, error) {
 	if len(flow) > 0 {
 		settings.Flow = flow
 	}
-
 	encryption := query.Get("encryption")
 	if len(encryption) > 0 {
 		settings.Encryption = encryption
@@ -306,7 +313,14 @@ func (proxy xrayShareLink) socksOutbound() (*conf.OutboundDetourConfig, error) {
 	outbound.Protocol = "socks"
 	setOutboundName(outbound, proxy.link.Fragment)
 
-	users := []json.RawMessage{}
+	settings := &conf.SocksClientConfig{}
+
+	settings.Address = parseAddress(proxy.link.Hostname())
+	port, err := strconv.Atoi(proxy.link.Port())
+	if err != nil {
+		return nil, err
+	}
+	settings.Port = uint16(port)
 
 	userPassword := proxy.link.User.String()
 	if len(userPassword) > 0 {
@@ -319,29 +333,9 @@ func (proxy xrayShareLink) socksOutbound() (*conf.OutboundDetourConfig, error) {
 			return nil, fmt.Errorf("unsupport link socks user password: %s", passwordText)
 		}
 
-		user := &conf.SocksAccount{}
-		user.Username = pwConfig[0]
-		user.Password = pwConfig[1]
-
-		userRawMessage, err := convertJsonToRawMessage(user)
-		if err != nil {
-			return nil, err
-		}
-
-		users = append(users, userRawMessage)
+		settings.Username = pwConfig[0]
+		settings.Password = pwConfig[1]
 	}
-
-	server := &conf.SocksRemoteConfig{}
-	server.Address = parseAddress(proxy.link.Hostname())
-	port, err := strconv.Atoi(proxy.link.Port())
-	if err != nil {
-		return nil, err
-	}
-	server.Port = uint16(port)
-	server.Users = users
-
-	settings := &conf.SocksClientConfig{}
-	settings.Servers = []*conf.SocksRemoteConfig{server}
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -363,22 +357,20 @@ func (proxy xrayShareLink) trojanOutbound() (*conf.OutboundDetourConfig, error) 
 	outbound.Protocol = "trojan"
 	setOutboundName(outbound, proxy.link.Fragment)
 
-	server := &conf.TrojanServerTarget{}
-	server.Address = parseAddress(proxy.link.Hostname())
+	settings := &conf.TrojanClientConfig{}
+
+	settings.Address = parseAddress(proxy.link.Hostname())
 	port, err := strconv.Atoi(proxy.link.Port())
 	if err != nil {
 		return nil, err
 	}
-	server.Port = uint16(port)
+	settings.Port = uint16(port)
 
 	password, err := url.QueryUnescape(proxy.link.User.String())
 	if err != nil {
 		return nil, err
 	}
-	server.Password = password
-
-	settings := &conf.TrojanClientConfig{}
-	settings.Servers = []*conf.TrojanServerTarget{server}
+	settings.Password = password
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -395,6 +387,79 @@ func (proxy xrayShareLink) trojanOutbound() (*conf.OutboundDetourConfig, error) 
 	return outbound, nil
 }
 
+func (proxy xrayShareLink) hysteriaOutbound() (*conf.OutboundDetourConfig, error) {
+	outbound := &conf.OutboundDetourConfig{}
+	outbound.Protocol = "hysteria"
+	setOutboundName(outbound, proxy.link.Fragment)
+
+	settings := &conf.HysteriaClientConfig{}
+
+	settings.Version = 2
+	settings.Address = parseAddress(proxy.link.Hostname())
+	port, err := strconv.Atoi(proxy.link.Port())
+	if err != nil {
+		return nil, err
+	}
+	settings.Port = uint16(port)
+
+	settingsRawMessage, err := convertJsonToRawMessage(settings)
+	if err != nil {
+		return nil, err
+	}
+	outbound.Settings = &settingsRawMessage
+
+	streamSettings := &conf.StreamConfig{}
+	network := conf.TransportProtocol("hysteria")
+	streamSettings.Network = &network
+
+	hysteriaSettings := &conf.HysteriaConfig{}
+	hysteriaSettings.Version = 2
+	auth, err := url.QueryUnescape(proxy.link.User.String())
+	if err != nil {
+		return nil, err
+	}
+	hysteriaSettings.Auth = auth
+	streamSettings.HysteriaSettings = hysteriaSettings
+
+	streamSettings.Security = "tls"
+
+	query := proxy.link.Query()
+	if len(query) > 0 {
+		tlsSettings := &conf.TLSConfig{}
+		insecure := query.Get("insecure")
+		if insecure == "1" {
+			tlsSettings.Insecure = true
+		}
+		sni := query.Get("sni")
+		if len(sni) > 0 {
+			tlsSettings.ServerName = sni
+		}
+		streamSettings.TLSSettings = tlsSettings
+
+		obfsPassword := query.Get("obfs-password")
+		if len(obfsPassword) > 0 {
+			obfs := &conf.FinalMask{}
+			obfs.Type = "salamander"
+
+			settings := &conf.Salamander{}
+			settings.Password = obfsPassword
+
+			settingsRawMessage, err := convertJsonToRawMessage(settings)
+			if err != nil {
+				return nil, err
+			}
+
+			obfs.Settings = &settingsRawMessage
+
+			streamSettings.Udpmasks = []*conf.FinalMask{obfs}
+		}
+	}
+
+	outbound.StreamSetting = streamSettings
+
+	return outbound, nil
+}
+
 func (proxy xrayShareLink) streamSettings(link *url.URL) (*conf.StreamConfig, error) {
 	query := link.Query()
 	if len(query) == 0 {
@@ -402,6 +467,7 @@ func (proxy xrayShareLink) streamSettings(link *url.URL) (*conf.StreamConfig, er
 	}
 
 	streamSettings := &conf.StreamConfig{}
+
 	network := query.Get("type")
 	if len(network) == 0 {
 		network = "raw"
@@ -519,21 +585,16 @@ func (proxy xrayShareLink) parseSecurity(link *url.URL, streamSettings *conf.Str
 	tlsSettings.ServerName = sni
 	realitySettings.ServerName = sni
 
+	ech := query.Get("ech")
+	tlsSettings.ECHConfigList = ech
+
+	pcs := query.Get("pcs")
+	tlsSettings.PinnedPeerCertSha256 = pcs
+
 	alpn := query.Get("alpn")
 	if len(alpn) > 0 {
 		alpn := conf.StringList(strings.Split(alpn, ","))
 		tlsSettings.ALPN = &alpn
-	}
-
-	// https://github.com/XTLS/Xray-core/discussions/716
-	// 4.4.3 allowInsecure
-	// 没有这个字段。不安全的节点，不适合分享。
-	// I don't like this field, but too many people ask for it.
-	allowInsecure := query.Get("allowInsecure")
-	if len(allowInsecure) > 0 {
-		if allowInsecure == "true" || allowInsecure == "1" {
-			tlsSettings.Insecure = true
-		}
 	}
 
 	pbk := query.Get("pbk")

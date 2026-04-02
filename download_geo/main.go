@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	libXray "github.com/dimas862/libxray"
-	"github.com/dimas862/libxray/nodep"
+	libXray "github.com/xtls/libxray"
+	"github.com/xtls/libxray/nodep"
 )
 
 func ensureDir(dir string) error {
@@ -111,9 +111,9 @@ func main() {
 	}
 
 	// Download geosite.dat
-	//downloadDat("https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat", datDir, "geosite", "domain")
+	downloadDat("https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat", datDir, "geosite", "domain")
 	// Download geoip.dat
-	//downloadDat("https://github.com/v2fly/geoip/releases/latest/download/geoip.dat", datDir, "geoip", "ip")
+	downloadDat("https://github.com/v2fly/geoip/releases/latest/download/geoip.dat", datDir, "geoip", "ip")
 
 	// Save timestamp
 	err = saveTimestamp(datDir, "timestamp.txt")

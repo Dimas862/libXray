@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/dimas862/libxray/geo"
-	"github.com/dimas862/libxray/nodep"
-	"github.com/dimas862/libxray/xray"
+	"github.com/xtls/libxray/geo"
+	"github.com/xtls/libxray/nodep"
+	"github.com/xtls/libxray/xray"
 )
 
 type CountGeoDataRequest struct {
@@ -29,28 +29,6 @@ func CountGeoData(base64Text string) string {
 		return response.EncodeToBase64("", err)
 	}
 	err = geo.CountGeoData(request.DatDir, request.Name, request.GeoType)
-	return response.EncodeToBase64("", err)
-}
-
-type ThinGeoDataRequest struct {
-	DatDir     string `json:"datDir,omitempty"`
-	ConfigPath string `json:"configPath,omitempty"`
-	DstDir     string `json:"dstDir,omitempty"`
-}
-
-// thin geo data
-func ThinGeoData(base64Text string) string {
-	var response nodep.CallResponse[string]
-	req, err := base64.StdEncoding.DecodeString(base64Text)
-	if err != nil {
-		return response.EncodeToBase64("", err)
-	}
-	var request ThinGeoDataRequest
-	err = json.Unmarshal(req, &request)
-	if err != nil {
-		return response.EncodeToBase64("", err)
-	}
-	err = geo.ThinGeoData(request.DatDir, request.ConfigPath, request.DstDir)
 	return response.EncodeToBase64("", err)
 }
 

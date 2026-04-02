@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dimas862/xray-core/infra/conf"
+	"github.com/xtls/xray-core/infra/conf"
 )
 
 // https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
@@ -43,28 +43,18 @@ func (proxy vmessQrCode) outbound() (*conf.OutboundDetourConfig, error) {
 	outbound.Protocol = "vmess"
 	setOutboundName(outbound, proxy.Ps)
 
-	user := &conf.VMessAccount{}
-	user.ID = proxy.Id
-	user.Security = proxy.Scy
+	settings := conf.VMessOutboundConfig{}
 
-	vnext := &conf.VMessOutboundTarget{}
-	vnext.Address = parseAddress(proxy.Add)
-
+	settings.Address = parseAddress(proxy.Add)
 	portStr := fmt.Sprintf("%v", proxy.Port)
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		return nil, err
 	}
-	vnext.Port = uint16(port)
+	settings.Port = uint16(port)
 
-	userRawMessage, err := convertJsonToRawMessage(user)
-	if err != nil {
-		return nil, err
-	}
-	vnext.Users = []json.RawMessage{userRawMessage}
-
-	settings := conf.VMessOutboundConfig{}
-	settings.Receivers = []*conf.VMessOutboundTarget{vnext}
+	settings.ID = proxy.Id
+	settings.Security = proxy.Scy
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {

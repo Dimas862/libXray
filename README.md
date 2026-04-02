@@ -19,8 +19,8 @@ Compile script. It is recommended to always use this script to compile libXray. 
 ### Usage
 
 ```shell
-# Android (optional: specify Android API level, default is 21)
-python3 build/main.py android [api-level]
+# Android (min Android API level is 21)
+python3 build/main.py android
 
 # Apple (gomobile or go)
 python3 build/main.py apple gomobile
@@ -94,10 +94,6 @@ Read geo files and count the categories and rules.
 ### read
 
 Read the Xray Json configuration and extract the geo file name used.
-
-### thin
-
-Read the Xray Json configuration and cut the geo file used.
 
 ## main
 

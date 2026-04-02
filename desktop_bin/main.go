@@ -1,20 +1,20 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"os"
 	"os/signal"
 	"runtime"
 	"runtime/debug"
 	"syscall"
 
-	"github.com/dimas862/libxray/xray"
+	"github.com/xtls/libxray/xray"
 )
 
 func main() {
-	configPath := os.Args[1]
-	fmt.Println("configPath:", configPath)
-	err := runXray(configPath)
+	configPath := flag.String("configPath", "config.json", "Path of config.json")
+	flag.Parse()
+	err := runXray(*configPath)
 	if err != nil {
 		os.Exit(1)
 	}

@@ -4,10 +4,10 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/dimas862/libxray/memory"
-	"github.com/dimas862/xray-core/common/cmdarg"
-	"github.com/dimas862/xray-core/core"
-	_ "github.com/dimas862/xray-core/main/distro/all"
+	"github.com/xtls/libxray/memory"
+	"github.com/xtls/xray-core/common/cmdarg"
+	"github.com/xtls/xray-core/core"
+	_ "github.com/xtls/xray-core/main/distro/all"
 )
 
 // Constants for environment variables
@@ -38,7 +38,7 @@ func StartXray(configPath string) (*core.Instance, error) {
 func StartXrayFromJSON(configJSON string) (*core.Instance, error) {
 	// Convert JSON string to bytes
 	configBytes := []byte(configJSON)
-	
+
 	// Use core.StartInstance which can load configuration directly from bytes
 	server, err := core.StartInstance("json", configBytes)
 	if err != nil {
@@ -80,10 +80,6 @@ func RunXrayFromJSON(datDir string, configJSON string) (err error) {
 	memory.InitForceFree()
 	coreServer, err = StartXrayFromJSON(configJSON)
 	if err != nil {
-		return
-	}
-
-	if err = coreServer.Start(); err != nil {
 		return
 	}
 

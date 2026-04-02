@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/dimas862/libxray/dns"
-	"github.com/dimas862/libxray/nodep"
+	"github.com/xtls/libxray/dns"
+	"github.com/xtls/libxray/nodep"
 )
 
 type InitDnsRequest struct {
