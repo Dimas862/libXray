@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netlink v1.3.1
-	github.com/dimas862/xray-core v1.90.2
+	github.com/dimas862/xray-core v1.90.3
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
