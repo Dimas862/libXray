@@ -1,13 +1,11 @@
 package share
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/dimas862/xray-core/infra/conf"
-	"github.com/dimas862/xray-core/proxy/vless"
 )
 
 // https://github.com/MetaCubeX/mihomo/blob/Alpha/docs/config.yaml
@@ -17,14 +15,22 @@ type ClashYaml struct {
 }
 
 type ClashProxy struct {
-	Name     string `yaml:"name,omitempty"`
-	Type     string `yaml:"type,omitempty"`
-	Server   string `yaml:"server,omitempty"`
-	Port     uint16 `yaml:"port,omitempty"`
-	Uuid     string `yaml:"uuid,omitempty"`
-	Cipher   string `yaml:"cipher,omitempty"`
-	Username string `yaml:"username,omitempty"`
-	Password string `yaml:"password,omitempty"`
+	Name       string `yaml:"name,omitempty"`
+	Type       string `yaml:"type,omitempty"`
+	Server     string `yaml:"server,omitempty"`
+	Port       uint16 `yaml:"port,omitempty"`
+	Uuid       string `yaml:"uuid,omitempty"`
+	Cipher     string `yaml:"cipher,omitempty"`
+	Username   string `yaml:"username,omitempty"`
+	Password   string `yaml:"password,omitempty"`
+	Encryption string `yaml:"encryption,omitempty"`
+
+	Ports        string `yaml:"ports,omitempty"`
+	HopInterval  int64  `yaml:"hop-interval,omitempty"`
+	Up           string `yaml:"up,omitempty"`
+	Down         string `yaml:"down,omitempty"`
+	Obfs         string `yaml:"obfs,omitempty"`
+	ObfsPassword string `yaml:"obfs-password,omitempty"`
 
 	Udp        bool `yaml:"udp,omitempty"`
 	UdpOverTcp bool `yaml:"udp-over-tcp,omitempty"`
@@ -146,6 +152,12 @@ func (proxy ClashProxy) outbound() (*conf.OutboundDetourConfig, error) {
 			return nil, err
 		}
 		return outbound, nil
+	case "hysteria2":
+		outbound, err := proxy.hysteria2Outbound()
+		if err != nil {
+			return nil, err
+		}
+		return outbound, nil
 	}
 	return nil, fmt.Errorf("unsupport proxy type: %s", proxy.Type)
 }
@@ -155,15 +167,14 @@ func (proxy ClashProxy) shadowsocksOutbound() (*conf.OutboundDetourConfig, error
 	outbound.Protocol = "shadowsocks"
 	setOutboundName(outbound, proxy.Name)
 
-	server := &conf.ShadowsocksServerTarget{}
-	server.Address = parseAddress(proxy.Server)
-	server.Port = proxy.Port
-	server.Cipher = proxy.Cipher
-	server.Password = proxy.Password
-	server.UoT = proxy.UdpOverTcp
+	settings := conf.ShadowsocksClientConfig{}
 
-	var settings conf.ShadowsocksClientConfig
-	settings.Servers = []*conf.ShadowsocksServerTarget{server}
+	settings.Address = parseAddress(proxy.Server)
+	settings.Port = proxy.Port
+
+	settings.Cipher = proxy.Cipher
+	settings.Password = proxy.Password
+	settings.UoT = proxy.UdpOverTcp
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -218,22 +229,13 @@ func (proxy ClashProxy) vmessOutbound() (*conf.OutboundDetourConfig, error) {
 	outbound.Protocol = "vmess"
 	setOutboundName(outbound, proxy.Name)
 
-	user := &conf.VMessAccount{}
-	user.ID = proxy.Uuid
-	user.Security = proxy.Cipher
-
-	vnext := &conf.VMessOutboundTarget{}
-	vnext.Address = parseAddress(proxy.Server)
-	vnext.Port = proxy.Port
-
-	userRawMessage, err := convertJsonToRawMessage(user)
-	if err != nil {
-		return nil, err
-	}
-	vnext.Users = []json.RawMessage{userRawMessage}
-
 	settings := conf.VMessOutboundConfig{}
-	settings.Receivers = []*conf.VMessOutboundTarget{vnext}
+
+	settings.Address = parseAddress(proxy.Server)
+	settings.Port = proxy.Port
+
+	settings.ID = proxy.Uuid
+	settings.Security = proxy.Cipher
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -255,22 +257,16 @@ func (proxy ClashProxy) vlessOutbound() (*conf.OutboundDetourConfig, error) {
 	outbound.Protocol = "vless"
 	setOutboundName(outbound, proxy.Name)
 
-	user := &vless.Account{}
-	user.Id = proxy.Uuid
-	user.Flow = proxy.Flow
+	settings := conf.VLessOutboundConfig{}
 
-	vnext := &conf.VLessOutboundVnext{}
-	vnext.Address = parseAddress(proxy.Server)
-	vnext.Port = proxy.Port
+	settings.Address = parseAddress(proxy.Server)
+	settings.Port = proxy.Port
 
-	userRawMessage, err := convertJsonToRawMessage(user)
-	if err != nil {
-		return nil, err
+	settings.Id = proxy.Uuid
+	settings.Flow = proxy.Flow
+	if len(proxy.Encryption) > 0 {
+		settings.Encryption = proxy.Encryption
 	}
-	vnext.Users = []json.RawMessage{userRawMessage}
-
-	settings := &conf.VLessOutboundConfig{}
-	settings.Vnext = []*conf.VLessOutboundVnext{vnext}
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -292,22 +288,13 @@ func (proxy ClashProxy) socksOutbound() (*conf.OutboundDetourConfig, error) {
 	outbound.Protocol = "socks"
 	setOutboundName(outbound, proxy.Name)
 
-	user := &conf.SocksAccount{}
-	user.Username = proxy.Username
-	user.Password = proxy.Password
+	settings := conf.SocksClientConfig{}
 
-	server := &conf.SocksRemoteConfig{}
-	server.Address = parseAddress(proxy.Server)
-	server.Port = proxy.Port
+	settings.Address = parseAddress(proxy.Server)
+	settings.Port = proxy.Port
 
-	userRawMessage, err := convertJsonToRawMessage(user)
-	if err != nil {
-		return nil, err
-	}
-	server.Users = []json.RawMessage{userRawMessage}
-
-	settings := &conf.SocksClientConfig{}
-	settings.Servers = []*conf.SocksRemoteConfig{server}
+	settings.Username = proxy.Username
+	settings.Password = proxy.Password
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -329,13 +316,38 @@ func (proxy ClashProxy) trojanOutbound() (*conf.OutboundDetourConfig, error) {
 	outbound.Protocol = "trojan"
 	setOutboundName(outbound, proxy.Name)
 
-	server := &conf.TrojanServerTarget{}
-	server.Address = parseAddress(proxy.Server)
-	server.Port = proxy.Port
-	server.Password = proxy.Password
+	settings := conf.TrojanClientConfig{}
 
-	settings := &conf.TrojanClientConfig{}
-	settings.Servers = []*conf.TrojanServerTarget{server}
+	settings.Address = parseAddress(proxy.Server)
+	settings.Port = proxy.Port
+
+	settings.Password = proxy.Password
+
+	settingsRawMessage, err := convertJsonToRawMessage(settings)
+	if err != nil {
+		return nil, err
+	}
+	outbound.Settings = &settingsRawMessage
+
+	streamSettings, err := proxy.streamSettings(*outbound)
+	if err != nil {
+		return nil, err
+	}
+	outbound.StreamSetting = streamSettings
+
+	return outbound, nil
+}
+
+func (proxy ClashProxy) hysteria2Outbound() (*conf.OutboundDetourConfig, error) {
+	outbound := &conf.OutboundDetourConfig{}
+	outbound.Protocol = "hysteria"
+	setOutboundName(outbound, proxy.Name)
+
+	settings := conf.HysteriaClientConfig{}
+
+	settings.Version = 2
+	settings.Address = parseAddress(proxy.Server)
+	settings.Port = proxy.Port
 
 	settingsRawMessage, err := convertJsonToRawMessage(settings)
 	if err != nil {
@@ -361,6 +373,13 @@ func (proxy ClashProxy) streamSettings(outbound conf.OutboundDetourConfig) (*con
 	transportProtocol := conf.TransportProtocol(network)
 	streamSettings.Network = &transportProtocol
 
+	// fix hysteria network
+	if proxy.Type == "hysteria2" {
+		network = "hysteria"
+		transportProtocol = conf.TransportProtocol("hysteria")
+		streamSettings.Network = &transportProtocol
+	}
+
 	switch network {
 	case "ws":
 		if proxy.WsOpts != nil {
@@ -376,6 +395,45 @@ func (proxy ClashProxy) streamSettings(outbound conf.OutboundDetourConfig) (*con
 			grpcSettings := &conf.GRPCConfig{}
 			grpcSettings.ServiceName = proxy.GrpcOpts.GrpcServiceName
 			streamSettings.GRPCSettings = grpcSettings
+		}
+	case "hysteria":
+		hysteriaSettings := &conf.HysteriaConfig{}
+		hysteriaSettings.Version = 2
+		hysteriaSettings.Auth = proxy.Password
+		if len(proxy.Up) > 0 {
+			hysteriaSettings.Up = conf.Bandwidth(proxy.Up)
+		}
+		if len(proxy.Down) > 0 {
+			hysteriaSettings.Down = conf.Bandwidth(proxy.Down)
+		}
+		if len(proxy.Ports) > 0 {
+			udpHop := conf.UdpHop{}
+			portListRawMessage, err := convertJsonToRawMessage(proxy.Ports)
+			if err != nil {
+				return nil, err
+			}
+			udpHop.PortList = portListRawMessage
+			udpHop.Interval = proxy.HopInterval
+
+			hysteriaSettings.UdpHop = udpHop
+		}
+		streamSettings.HysteriaSettings = hysteriaSettings
+		// udpmasks
+		if proxy.Obfs == "salamander" {
+			obfs := &conf.FinalMask{}
+			obfs.Type = "salamander"
+
+			settings := &conf.Salamander{}
+			settings.Password = proxy.ObfsPassword
+
+			settingsRawMessage, err := convertJsonToRawMessage(settings)
+			if err != nil {
+				return nil, err
+			}
+
+			obfs.Settings = &settingsRawMessage
+
+			streamSettings.Udpmasks = []*conf.FinalMask{obfs}
 		}
 	}
 	proxy.parseSecurity(streamSettings, outbound)
@@ -436,3 +494,4 @@ func (proxy ClashProxy) parseSecurity(streamSettings *conf.StreamConfig, outboun
 		streamSettings.REALITYSettings = realitySettings
 	}
 }
+

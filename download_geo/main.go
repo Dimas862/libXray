@@ -124,3 +124,4 @@ func main() {
 
 	fmt.Println("Geo data setup completed successfully.")
 }
+

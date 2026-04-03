@@ -38,7 +38,7 @@ func StartXray(configPath string) (*core.Instance, error) {
 func StartXrayFromJSON(configJSON string) (*core.Instance, error) {
 	// Convert JSON string to bytes
 	configBytes := []byte(configJSON)
-	
+
 	// Use core.StartInstance which can load configuration directly from bytes
 	server, err := core.StartInstance("json", configBytes)
 	if err != nil {
@@ -83,10 +83,6 @@ func RunXrayFromJSON(datDir string, configJSON string) (err error) {
 		return
 	}
 
-	if err = coreServer.Start(); err != nil {
-		return
-	}
-
 	debug.FreeOSMemory()
 	return nil
 }
@@ -112,3 +108,5 @@ func StopXray() error {
 func XrayVersion() string {
 	return core.Version()
 }
+
+

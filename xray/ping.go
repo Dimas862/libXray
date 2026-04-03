@@ -29,3 +29,4 @@ func Ping(datDir string, configPath string, timeout int, url string, proxy strin
 
 	return delay, nil
 }
+
